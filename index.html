@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ai là triệu phú: Bài 52 - KHTN 6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background: #020617; 
+            color: white; 
+            height: 100vh;
+            overflow: hidden; 
+        }
+
+        .fire-bg {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1; opacity: 0.6;
+        }
+        .fire-particle {
+            position: absolute; bottom: -50px; background: linear-gradient(to top, #f97316, #fbbf24, #ffffff);
+            width: 14px; height: 14px; border-radius: 50% 50% 20% 50%;
+            filter: blur(2px); animation: rise 1.5s infinite ease-out;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100vh) scale(0.2); opacity: 0; }
+        }
+
+        .glass-panel { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; }
+        
+        .scroll-area {
+            overflow-y: auto;
+            max-height: 48vh;
+            scrollbar-width: thin;
+            scrollbar-color: #fbbf24 transparent;
+            padding-right: 12px;
+        }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 10px; }
+
+        .option-btn { 
+            background: rgba(30, 41, 59, 0.8); border: 2px solid #334155; 
+            padding: 1rem; border-radius: 16px; transition: 0.2s; cursor: pointer;
+            display: flex; align-items: center; width: 100%; margin-bottom: 12px;
+        }
+        .option-btn.selected { background: #fbbf24 !important; color: #000 !important; border-color: #fff !important; font-weight: 900; }
+        .option-btn.hidden-opt { opacity: 0; pointer-events: none; }
+
+        .tf-row { background: rgba(255,255,255,0.03); padding: 14px; border-radius: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.08); }
+        .tf-btn { padding: 10px 20px; border-radius: 10px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); transition: 0.2s; min-width: 80px; }
+        .active-true { background: #10b981; color: white; border-color: white; }
+        .active-false { background: #ef4444; color: white; border-color: white; }
+
+        .helper-btn {
+            width: 50px; height: 35px; border-radius: 18px; border: 2px solid #fbbf24;
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
+            transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.6); font-size: 0.75rem;
+        }
+        .helper-btn.used { opacity: 0.2; pointer-events: none; border-color: #475569; }
+
+        #scratch-container {
+            position: relative; width: 280px; height: 140px; margin: 0 auto;
+            background: #fff; border-radius: 16px; overflow: hidden; border: 4px solid #fbbf24;
+        }
+        #scratch-canvas { position: absolute; top: 0; left: 0; cursor: crosshair; touch-action: none; }
+    </style>
+</head>
+<body>
+
+    <div id="fire-container" class="fire-bg"></div>
+    
+    <!-- Audio Assets -->
+    <audio id="s-click" preload="auto"><source src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+    <audio id="s-win" preload="auto"><source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
+    <audio id="s-lose" preload="auto"><source src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+    <audio id="s-start" preload="auto"><source src="https://www.soundjay.com/misc/sounds/magic-chime-01.mp3"></audio>
+
+    <div class="relative z-10 w-full h-full flex flex-col items-center justify-center p-4">
+        
+        <!-- MÀN HÌNH ĐĂNG NHẬP -->
+        <div id="login-screen" class="glass-panel p-8 w-full max-w-md shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="inline-block p-4 bg-yellow-500/20 rounded-full mb-4">
+                    <i class="fa-solid fa-sun text-5xl text-yellow-500 animate-spin-slow"></i>
+                </div>
+                <h1 class="text-3xl font-black uppercase text-white">AI LÀ TRIỆU PHÚ</h1>
+                <p class="text-yellow-500 font-bold mb-2">Bài 52: Chuyển động Mặt Trời</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="in-name" placeholder="HỌ VÀ TÊN HỌC SINH" class="w-full p-4 rounded-xl bg-slate-900 border-2 border-slate-700 text-center font-bold text-yellow-500 uppercase outline-none focus:border-yellow-500">
+                <input type="text" id="in-class" placeholder="LỚP" class="w-full p-4 rounded-xl bg-slate-900 border-2 border-slate-700 text-center outline-none">
+                <button onclick="handleLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-5 rounded-2xl shadow-xl transition-all uppercase text-xl border-b-4 border-yellow-800">BẮT ĐẦU THI</button>
+            </div>
+        </div>
+
+        <!-- MÀN HÌNH CHƠI GAME -->
+        <div id="game-screen" class="hidden w-full max-w-3xl space-y-4">
+            <div class="glass-panel p-4 flex justify-between items-center border-b-2 border-yellow-500/30">
+                <div class="flex gap-2">
+                    <div id="h-5050" onclick="help5050()" class="helper-btn">50:50</div>
+                    <div id="h-audience" onclick="helpAudience()" class="helper-btn"><i class="fa-solid fa-users"></i></div>
+                    <div id="h-call" onclick="helpCall()" class="helper-btn"><i class="fa-solid fa-phone"></i></div>
+                </div>
+                <div class="text-right">
+                    <div id="q-progress" class="text-2xl font-black text-yellow-500 italic leading-none">CÂU 1/24</div>
+                    <div id="user-tag" class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold"></div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 shadow-inner">
+                <div class="scroll-area">
+                    <h2 id="q-text" class="text-xl md:text-2xl font-bold mb-6 text-center text-yellow-50"></h2>
+                    <div id="mcq-box" class="space-y-3"></div>
+                    <div id="tf-box" class="hidden space-y-2"></div>
+                    <div id="short-box" class="hidden flex flex-col items-center py-6">
+                        <input type="text" id="short-input" placeholder="GÕ ĐÁP ÁN TẠI ĐÂY..." class="w-full max-w-md p-6 rounded-2xl bg-slate-900 border-4 border-yellow-500 text-center text-3xl font-black uppercase text-white outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="confirmAnswer()" class="w-full bg-blue-700 hover:bg-blue-600 py-6 rounded-2xl font-black text-2xl shadow-2xl transition-all uppercase text-white border-b-4 border-blue-900 active:translate-y-1">ĐÁP ÁN CỦA TÔI</button>
+        </div>
+
+        <!-- MÀN HÌNH KẾT QUẢ -->
+        <div id="result-screen" class="hidden glass-panel p-10 w-full max-w-md text-center border-2 border-yellow-500">
+            <h2 class="text-3xl font-black text-yellow-500 mb-2 uppercase italic">KẾT THÚC</h2>
+            <p id="result-msg" class="text-slate-300 mb-8"></p>
+            <div id="scratch-container">
+                <div class="w-full h-full flex flex-col items-center justify-center text-slate-900 bg-white">
+                    <span id="final-score" class="text-8xl font-black text-blue-900">0.0</span>
+                </div>
+                <canvas id="scratch-canvas" width="280" height="140"></canvas>
+            </div>
+            <button onclick="location.reload()" class="w-full mt-8 py-5 bg-slate-800 rounded-2xl font-black uppercase text-white">THI LẠI</button>
+        </div>
+    </div>
+
+    <!-- MODAL LỜI CHÚC & THÔNG BÁO -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/95 z-[100] hidden items-center justify-center p-6 backdrop-blur-md">
+        <div class="glass-panel p-10 max-w-md w-full text-center border-2 border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.4)]">
+            <div id="m-icon" class="text-8xl mb-6 animate-bounce">🔥</div>
+            <h3 id="m-title" class="text-3xl font-black text-white mb-4 uppercase italic"></h3>
+            <div id="m-body" class="text-slate-300 mb-10 text-lg leading-relaxed"></div>
+            <button id="m-btn" onclick="closeModal()" class="w-full bg-yellow-500 py-6 rounded-2xl font-black text-black uppercase shadow-lg hover:bg-yellow-400 transition-all text-2xl">TIẾP TỤC</button>
+        </div>
+    </div>
+
+    <script>
+        // KHO DỮ LIỆU 40 CÂU HỎI HOÀN CHỈNH
+        const DB_MCQ = [
+            {q: "Mặt Trời mọc ở hướng nào?", a: ["Hướng Tây", "Hướng Đông", "Hướng Nam", "Hướng Bắc"], c: 1, e: "Mặt Trời luôn mọc ở hướng Đông do Trái Đất quay từ Tây sang Đông."},
+            {q: "Mặt Trời lặn ở hướng nào?", a: ["Hướng Bắc", "Hướng Đông", "Hướng Nam", "Hướng Tây"], c: 3, e: "Mặt Trời lặn ở hướng Tây."},
+            {q: "Trái Đất tự quay quanh trục theo chiều nào?", a: ["Từ Đông sang Tây", "Từ Tây sang Đông", "Từ Bắc xuống Nam", "Từ Nam lên Bắc"], c: 1},
+            {q: "Chuyển động nhìn thấy của Mặt Trời là gì?", a: ["Chuyển động thực của Mặt Trời", "Chuyển động ảo do Trái Đất tự quay", "Chuyển động quanh Ngân Hà", "Chuyển động của các hành tinh"], c: 1},
+            {q: "Thời gian Trái Đất quay hết một vòng quanh trục là bao lâu?", a: ["12 giờ", "24 giờ", "365 ngày", "1 tháng"], c: 1},
+            {q: "Khi nhìn từ Trái Đất, ta thấy Mặt Trời mọc và lặn hằng ngày vì:", a: ["Mặt Trời chuyển động quanh Trái Đất", "Trái Đất chuyển động quanh Mặt Trời", "Trái Đất tự quay quanh trục của nó", "Trục Trái Đất bị nghiêng"], c: 2},
+            {q: "Hướng Đông - Tây được xác định dựa trên điều gì?", a: ["Sự di chuyển của các vì sao", "Hướng mọc và lặn của Mặt Trời", "Sự di chuyển của Mặt Trăng", "La bàn điện tử"], c: 1},
+            {q: "Khi Mặt Trời ở vị trí cao nhất trên bầu trời, đó là thời điểm nào?", a: ["Bình minh", "Hoàng hôn", "Giữa trưa", "Nửa đêm"], c: 2},
+            {q: "Tại sao chúng ta có hiện tượng ngày và đêm luân phiên?", a: ["Do Mặt Trời đi ngủ", "Do Trái Đất có hình cầu và tự quay", "Do Mặt Trăng che khuất Mặt Trời", "Do khí quyển phản xạ ánh sáng"], c: 1},
+            {q: "Ở Việt Nam, Mặt Trời mọc sớm nhất ở phía nào?", a: ["Phía Bắc", "Phía Nam", "Phía Tây", "Phía Đông"], c: 3},
+            {q: "Nếu Trái Đất ngừng quay, hiện tượng gì sẽ xảy ra?", a: ["Không còn ngày và đêm luân phiên", "Mặt Trời vẫn mọc và lặn", "Trái Đất sẽ nổ tung", "Trọng lực biến mất"], c: 0},
+            {q: "Khoảng thời gian từ lúc Mặt Trời mọc đến lúc Mặt Trời lặn gọi là gì?", a: ["Ban đêm", "Ban ngày", "Một ngày đêm", "Bình minh"], c: 1},
+            {q: "Đường chân trời là gì?", a: ["Đường chia cắt giữa đất liền và biển", "Đường ranh giới nhìn thấy giữa bầu trời và mặt đất", "Quỹ đạo của Trái Đất", "Đường thẳng nối hai cực"], c: 1},
+            {q: "Người cổ đại xác định phương hướng dựa vào Mặt Trời như thế nào?", a: ["Dùng GPS", "Quan sát vị trí Mặt Trời lúc mọc/lặn", "Dùng nhiệt độ Mặt Trời", "Hỏi người đi đường"], c: 1},
+            {q: "Trái Đất quay quanh trục theo hướng từ Tây sang Đông, vậy ta thấy Mặt Trời:", a: ["Đứng yên", "Quay từ Đông sang Tây", "Quay từ Tây sang Đông", "Quay từ Bắc xuống Nam"], c: 1},
+            {q: "Vào ngày Equinox (Xuân phân/Thu phân), Mặt Trời mọc chính xác ở hướng nào?", a: ["Đông Bắc", "Đông Nam", "Chính Đông", "Chính Tây"], c: 2},
+            {q: "Tại sao vào mùa hè ban ngày thường dài hơn ban đêm?", a: ["Do Trái Đất quay chậm lại", "Do độ nghiêng của trục Trái Đất", "Do Mặt Trời sáng hơn", "Do mây ít hơn"], c: 1},
+            {q: "Tên gọi khác của thời điểm Mặt Trời ở vị trí cao nhất là gì?", a: ["Trung tâm", "Đỉnh điểm", "Chính ngọ", "Đỉnh cao"], c: 2},
+            {q: "Mặt Trời là một loại thiên thể nào?", a: ["Hành tinh", "Vệ tinh", "Ngôi sao (Sao)", "Thiên thạch"], c: 2},
+            {q: "Ánh sáng từ Mặt Trời mất bao lâu để đến Trái Đất?", a: ["1 giây", "8 phút", "24 giờ", "1 năm"], c: 1}
+        ];
+
+        const DB_TF = [
+            {q: "Về chuyển động của Trái Đất và Mặt Trời:", subs: [
+                {t: "Trái Đất quay quanh Mặt Trời theo chiều từ Tây sang Đông.", v: true},
+                {t: "Mặt Trời thực sự chuyển động quanh Trái Đất hằng ngày.", v: false},
+                {t: "Chuyển động mọc và lặn của Mặt Trời là chuyển động nhìn thấy.", v: true},
+                {t: "Trái Đất tự quay quanh trục mất đúng 12 giờ.", v: false}
+            ]},
+            {q: "Xác định phương hướng bằng Mặt Trời:", subs: [
+                {t: "Hướng Đông là hướng Mặt Trời mọc.", v: true},
+                {t: "Vào buổi chiều, bóng của vật sẽ đổ về phía Đông.", v: true},
+                {t: "Nếu tay phải chỉ hướng Đông, trước mặt là hướng Bắc.", v: true},
+                {t: "Buổi trưa, Mặt Trời luôn nằm ở hướng Tây.", v: false}
+            ]},
+            {q: "Đặc điểm hình dạng và tự quay của Trái Đất:", subs: [
+                {t: "Trái Đất có hình cầu.", v: true},
+                {t: "Phần được Mặt Trời chiếu sáng là ban đêm.", v: false},
+                {t: "Trái Đất quay quanh trục sinh ra hệ quả ngày đêm luân phiên.", v: true},
+                {t: "Mọi nơi trên Trái Đất đều thấy Mặt Trời mọc cùng một lúc.", v: false}
+            ]},
+            {q: "Về hệ Mặt Trời:", subs: [
+                {t: "Mặt Trời nằm ở trung tâm hệ Mặt Trời.", v: true},
+                {t: "Trái Đất là hành tinh thứ 3 tính từ Mặt Trời.", v: true},
+                {t: "Mặt Trăng tự phát ra ánh sáng như Mặt Trời.", v: false},
+                {t: "Có 8 hành tinh chính trong hệ Mặt Trời.", v: true}
+            ]},
+            {q: "Hệ quả của sự tự quay:", subs: [
+                {t: "Gây ra sự lệch hướng của các vật thể chuyển động.", v: true},
+                {t: "Làm cho Mặt Trời đứng yên trên bầu trời.", v: false},
+                {t: "Giúp xác định được thời gian trong ngày.", v: true},
+                {t: "Làm cho Trái Đất nóng dần lên hằng ngày.", v: false}
+            ]},
+            {q: "Về đường chân trời và vị trí Mặt Trời:", subs: [
+                {t: "Đường chân trời thay đổi tùy vào độ cao người quan sát.", v: true},
+                {t: "Mặt Trời luôn mọc ở hướng Bắc vào mùa đông.", v: false},
+                {t: "Giờ giữa trưa, bóng của vật là ngắn nhất.", v: true},
+                {t: "Mặt Trời lặn ở hướng Tây do Trái Đất quay ngược chiều kim đồng hồ nhìn từ cực Bắc.", v: true}
+            ]},
+            {q: "Sự phân chia ngày đêm:", subs: [
+                {t: "Một ngày đêm trên Trái Đất dài 24 tiếng.", v: true},
+                {t: "Ban đêm là lúc Trái Đất quay lưng lại với Mặt Trời.", v: true},
+                {t: "Ở cực Bắc luôn có 12 giờ ngày và 12 giờ đêm hằng ngày.", v: false},
+                {t: "Chạng vạng là thời điểm ngay sau khi Mặt Trời lặn.", v: true}
+            ]},
+            {q: "Chu kỳ và quỹ đạo:", subs: [
+                {t: "Quỹ đạo Trái Đất quanh Mặt Trời là hình elip gần tròn.", v: true},
+                {t: "Năm nhuận có 366 ngày.", v: true},
+                {t: "Trái Đất quay quanh trục theo hướng Đông sang Tây.", v: false},
+                {t: "Trục Trái Đất luôn nghiêng một góc khoảng 66,5 độ so với mặt phẳng quỹ đạo.", v: true}
+            ]},
+            {q: "Quan sát từ thực tế:", subs: [
+                {t: "Khi đi trên xe, ta thấy hàng cây bên đường lùi lại là chuyển động nhìn thấy.", v: true},
+                {t: "Mặt Trời mọc ở hướng Đông là chuyển động thực.", v: false},
+                {t: "Bóng của cái cọc thay đổi chiều dài suốt cả ngày.", v: true},
+                {t: "Vào ban đêm ta không nhìn thấy Mặt Trời vì nó bị tắt đi.", v: false}
+            ]},
+            {q: "Kiến thức bổ trợ:", subs: [
+                {t: "Mặt Trời là nguồn năng lượng chính cho Trái Đất.", v: true},
+                {t: "Nếu không có Mặt Trời, Trái Đất sẽ rất lạnh giá.", v: true},
+                {t: "Trái Đất quay quanh Mặt Trời mất 1 ngày.", v: false},
+                {t: "Sao Kim là hành tinh gần Mặt Trời nhất.", v: false}
+            ]}
+        ];
+
+        const DB_SHORT = [
+            {q: "Khoảng thời gian Trái Đất quay hết một vòng quanh trục là bao nhiêu giờ? (Gõ số)", a: "24"},
+            {q: "Hướng nào đối diện với hướng Đông?", a: "TAY"},
+            {q: "Khi Mặt Trời ở vị trí cao nhất, bóng của vật sẽ có chiều dài ... nhất. (Điền 1 từ)", a: "NGAN"},
+            {q: "Mặt Trời là ngôi sao nằm ở vị trí nào trong hệ Mặt Trời?", a: "TRUNG TAM"},
+            {q: "Tên gọi hiện tượng Mặt Trời mọc và lặn do Trái Đất tự quay là chuyển động ... nhìn thấy. (Điền 1 từ)", a: "QUAY"},
+            {q: "Trái Đất tự quay quanh ... của nó. (Điền 1 từ)", a: "TRUC"},
+            {q: "Người ta dùng dụng cụ nào để đo thời gian bằng ánh sáng Mặt Trời thời cổ? (Đồng hồ ...)", a: "MAT TROI"},
+            {q: "Số lượng hành tinh quay quanh Mặt Trời trong hệ Mặt Trời là mấy? (Gõ số)", a: "8"},
+            {q: "Hướng nào nằm giữa hướng Đông và hướng Bắc?", a: "DONG BAC"},
+            {q: "Vào buổi sáng, khi Mặt Trời mọc, bóng của cái cây đổ về hướng nào?", a: "TAY"}
+        ];
+
+        let pool = [];
+        let currentIdx = 0;
+        let selectedIdx = null;
+        let tfAnswers = [null, null, null, null];
+        let isOver = false;
+        let loginPhase = true;
+        let scoreCount = 0;
+        let helpers = { fifty: false, audience: false, call: false };
+
+        function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+        function handleLogin() {
+            const name = document.getElementById('in-name').value.trim();
+            if(!name) { alert("Vui lòng nhập họ tên để tham gia!"); return; }
+            
+            const mcqs = shuffle([...DB_MCQ]).slice(0, 16);
+            const tfs = shuffle([...DB_TF]).slice(0, 4);
+            const shorts = shuffle([...DB_SHORT]).slice(0, 4);
+            pool = shuffle([...mcqs, ...tfs, ...shorts]);
+
+            document.getElementById('user-tag').innerText = `${name} - ${document.getElementById('in-class').value || '6'}`;
+            
+            loginPhase = true;
+            playSound('s-start');
+            createFire('fire-container', 80);
+            showModal("CHÚC BẠN THI TỐT!", `Chào <b>${name}</b>!<br>Hệ thống đã chuẩn bị 24 câu hỏi xáo trộn dành riêng cho bạn. Hãy thật tự tin nhé!`, "🔥");
+        }
+
+        function initGame() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            currentIdx = 0;
+            scoreCount = 0;
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = pool[currentIdx];
+            document.getElementById('q-progress').innerText = `CÂU ${currentIdx + 1}/24`;
+            document.getElementById('q-text').innerText = q.q;
+            
+            const mcqBox = document.getElementById('mcq-box');
+            const tfBox = document.getElementById('tf-box');
+            const shortBox = document.getElementById('short-box');
+
+            mcqBox.innerHTML = ""; tfBox.innerHTML = "";
+            mcqBox.classList.add('hidden'); tfBox.classList.add('hidden'); shortBox.classList.add('hidden');
+            selectedIdx = null; tfAnswers = [null, null, null, null];
+
+            if(q.subs) { // Dạng Đúng/Sai
+                tfBox.classList.remove('hidden');
+                q.subs.forEach((s, i) => {
+                    const div = document.createElement('div');
+                    div.className = "tf-row flex flex-col md:flex-row justify-between items-center gap-3";
+                    div.innerHTML = `<span class="text-sm font-bold flex-1">${i+1}. ${s.t}</span>
+                        <div class="flex gap-2">
+                            <button id="tf-${i}-t" onclick="setTF(${i}, true)" class="tf-btn bg-slate-800">ĐÚNG</button>
+                            <button id="tf-${i}-f" onclick="setTF(${i}, false)" class="tf-btn bg-slate-800">SAI</button>
+                        </div>`;
+                    tfBox.appendChild(div);
+                });
+            } else if (q.a && Array.isArray(q.a)) { // Dạng trắc nghiệm
+                mcqBox.classList.remove('hidden');
+                q.a.forEach((opt, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = "option-btn";
+                    btn.id = `opt-${i}`;
+                    btn.innerHTML = `<span class="w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center mr-4 font-black text-xl">${String.fromCharCode(65+i)}</span> ${opt}`;
+                    btn.onclick = () => { 
+                        selectedIdx = i; 
+                        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected')); 
+                        btn.classList.add('selected'); 
+                        playSound('s-click'); 
+                    };
+                    mcqBox.appendChild(btn);
+                });
+            } else { // Dạng trả lời ngắn
+                shortBox.classList.remove('hidden');
+                document.getElementById('short-input').value = "";
+                setTimeout(() => document.getElementById('short-input').focus(), 200);
+            }
+        }
+
+        function setTF(idx, val) {
+            tfAnswers[idx] = val;
+            document.getElementById(`tf-${idx}-t`).className = `tf-btn ${val === true ? 'active-true' : 'bg-slate-800'}`;
+            document.getElementById(`tf-${idx}-f`).className = `tf-btn ${val === false ? 'active-false' : 'bg-slate-800'}`;
+            playSound('s-click');
+        }
+
+        function confirmAnswer() {
+            const q = pool[currentIdx];
+            let isCorrect = false;
+            let feedback = "";
+
+            if(q.subs) {
+                if(tfAnswers.includes(null)) { alert("Vui lòng chọn Đúng/Sai cho cả 4 ý!"); return; }
+                isCorrect = true;
+                q.subs.forEach((s, i) => { if(s.v !== tfAnswers[i]) isCorrect = false; });
+                feedback = "Đáp án đúng lần lượt là: " + q.subs.map(s => s.v ? "Đúng" : "Sai").join(", ");
+            } else if (q.a && Array.isArray(q.a)) {
+                if(selectedIdx === null) { alert("Hãy chọn một đáp án!"); return; }
+                isCorrect = (selectedIdx === q.c);
+                feedback = `Đáp án đúng là ${String.fromCharCode(65 + q.c)}. ${q.e || ""}`;
+            } else {
+                const val = document.getElementById('short-input').value.trim().toUpperCase();
+                if(!val) { alert("Vui lòng nhập câu trả lời!"); return; }
+                isCorrect = (val.includes(q.a) || q.a.includes(val));
+                feedback = `Đáp án chính xác là: ${q.a}`;
+            }
+
+            if(isCorrect) {
+                scoreCount++;
+                playSound('s-win');
+                showModal("CHÍNH XÁC!", "Bạn trả lời rất tốt. Sang câu tiếp theo nào!", "⭐");
+            } else {
+                playSound('s-lose');
+                isOver = true;
+                showModal("CHƯA ĐÚNG", feedback, "❌");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            if(loginPhase) {
+                initGame();
+                loginPhase = false;
+            } else if(isOver) {
+                finishGame();
+            } else {
+                currentIdx++;
+                if(currentIdx < 24) renderQuestion();
+                else finishGame();
+            }
+        }
+
+        function showModal(title, body, icon) {
+            document.getElementById('m-title').innerHTML = title;
+            document.getElementById('m-body').innerHTML = body;
+            document.getElementById('m-icon').innerText = icon;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function help5050() {
+            const q = pool[currentIdx];
+            if(helpers.fifty || !q.a || !Array.isArray(q.a)) return;
+            helpers.fifty = true;
+            document.getElementById('h-5050').classList.add('used');
+            let wrong = [0,1,2,3].filter(i => i !== q.c);
+            shuffle(wrong).slice(0, 2).forEach(idx => {
+                document.getElementById(`opt-${idx}`).classList.add('hidden-opt');
+            });
+            playSound('s-click');
+        }
+
+        function helpAudience() {
+            if(helpers.audience || !pool[currentIdx].a) return;
+            helpers.audience = true;
+            document.getElementById('h-audience').classList.add('used');
+            showModal("Ý KIẾN KHÁN GIẢ", `Đa số khán giả bình chọn cho đáp án ${String.fromCharCode(65 + pool[currentIdx].c)}!`, "📊");
+        }
+
+        function helpCall() {
+            if(helpers.call) return;
+            helpers.call = true;
+            document.getElementById('h-call').classList.add('used');
+            showModal("GỌI CHO NGƯỜI THÂN", "'Mình chắc chắn đáp án đúng nằm ở câu này, hãy tin mình!'", "📞");
+        }
+
+        function playSound(id) { const s = document.getElementById(id); if(s) { s.currentTime = 0; s.play().catch(()=>{}); } }
+
+        function finishGame() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            const final = (scoreCount / 24 * 10).toFixed(1);
+            document.getElementById('final-score').innerText = final;
+            document.getElementById('result-msg').innerText = `Bạn đã hoàn thành ${scoreCount}/24 câu hỏi.`;
+            initScratch();
+        }
+
+        function initScratch() {
+            const canvas = document.getElementById('scratch-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#A1A1AA';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "bold 16px Roboto";
+            ctx.fillStyle = "#334155";
+            ctx.textAlign = "center";
+            ctx.fillText("CÀO ĐỂ XEM ĐIỂM", 140, 75);
+            let isDrawing = false;
+            const scratch = (e) => {
+                if(!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI*2); ctx.fill();
+            };
+            canvas.onmousedown = () => isDrawing = true;
+            canvas.onmouseup = () => isDrawing = false;
+            canvas.onmousemove = scratch;
+            canvas.ontouchstart = (e) => { isDrawing = true; scratch(e); e.preventDefault(); };
+            canvas.ontouchend = () => isDrawing = false;
+            canvas.ontouchmove = scratch;
+        }
+
+        function createFire(id, count) {
+            const container = document.getElementById(id);
+            container.innerHTML = "";
+            for(let i=0; i<count; i++) {
+                const p = document.createElement('div');
+                p.className = 'fire-particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 2 + 's';
+                p.style.animationDuration = (1 + Math.random() * 1.5) + 's';
+                container.appendChild(p);
+            }
+        }
+        window.onload = () => createFire('fire-container', 30);
+    </script>
+</body>
+</html>
